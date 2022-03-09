@@ -5,6 +5,7 @@ from functools import partial
 
 from PIL import Image
 import lmdb
+from glob import glob
 from tqdm import tqdm
 from torchvision import datasets
 from torchvision.transforms import functional as trans_fn
@@ -45,12 +46,13 @@ def prepare(
 ):
     resize_fn = partial(resize_worker, sizes=sizes, resample=resample)
 
-    files = sorted(dataset.imgs, key=lambda x: x[0])
-    files = [(i, file) for i, (file, label) in enumerate(files)]
+    # files = sorted(dataset.imgs, key=lambda x: x[0])
+    # files = [(i, file) for i, (file, label) in enumerate(files)]
+    files = [(i, file) for i, file in enumerate(sorted(dataset))]
     total = 0
 
     with multiprocessing.Pool(n_worker) as pool:
-        for i, imgs in tqdm(pool.imap_unordered(resize_fn, files)):
+        for i, imgs in tqdm(pool.imap_unordered(resize_fn, files), total=len(files)):
             for size, img in zip(sizes, imgs):
                 key = f"{size}-{str(i).zfill(5)}".encode("utf-8")
 
@@ -64,8 +66,10 @@ def prepare(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Preprocess images for model training")
-    parser.add_argument("--out", type=str, help="filename of the result lmdb dataset")
+    parser = argparse.ArgumentParser(
+        description="Preprocess images for model training")
+    parser.add_argument("--out", type=str,
+                        help="filename of the result lmdb dataset")
     parser.add_argument(
         "--size",
         type=str,
@@ -84,7 +88,7 @@ if __name__ == "__main__":
         default="lanczos",
         help="resampling methods for resizing images",
     )
-    parser.add_argument("path", type=str, help="path to the image dataset")
+    parser.add_argument("--path", type=str, help="path to the image dataset")
 
     args = parser.parse_args()
 
@@ -95,7 +99,8 @@ if __name__ == "__main__":
 
     print(f"Make dataset of image sizes:", ", ".join(str(s) for s in sizes))
 
-    imgset = datasets.ImageFolder(args.path)
+    # imgset = datasets.ImageFolder(args.path)
+    imgset = glob(args.path+'/*')
 
     with lmdb.open(args.out, map_size=1024 ** 4, readahead=False) as env:
         prepare(env, imgset, args.n_worker, sizes=sizes, resample=resample)
