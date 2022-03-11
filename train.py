@@ -440,7 +440,7 @@ if __name__ == "__main__":
         "--save_ckpt",
         type=str,
         default="checkpoint",
-        help="resampling methods for resizing images",
+        help="save checkpoint dir",
     )
     args = parser.parse_args()
 
