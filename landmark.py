@@ -75,7 +75,7 @@ def read_data(file, out_dir, face_process=True):
 @click.option('--face_process', is_flag=True, default=False, show_default=True)
 def main(**kwargs):
     args = EasyDict(kwargs)
-    img_path = args.images
+    img_path = args.image_path
     save_pkl_path = args.save_pkl_path
     out_dir = args.out_dir
     face_process = args.face_process
