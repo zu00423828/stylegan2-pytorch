@@ -4,12 +4,17 @@ import torch
 from torchvision import utils
 from model import Generator
 from tqdm import tqdm
+import os
+import cv2
+from PIL import Image
+import numpy as np
 
 
 def generate(args, g_ema, device, mean_latent):
+    os.makedirs(args.save_img_path, exist_ok=True)
 
+    g_ema.eval()
     with torch.no_grad():
-        g_ema.eval()
         for i in tqdm(range(args.pics)):
             sample_z = torch.randn(args.sample, args.latent, device=device)
 
@@ -19,17 +24,45 @@ def generate(args, g_ema, device, mean_latent):
 
             utils.save_image(
                 sample,
-                f"sample/{str(i).zfill(6)}.png",
+                f"{args.save_img_path}/{str(i).zfill(6)}.png",
                 nrow=1,
                 normalize=True,
                 range=(-1, 1),
             )
 
 
+def generate_img(args, g_ema, device, mean_latent):
+    os.makedirs(args.save_img_path, exist_ok=True)
+    # output min max -1 ~ 1
+    g_ema.eval()
+    count = 1
+    with torch.no_grad():
+        for i in tqdm(range(args.pics)):
+            sample_z = torch.randn(args.sample, args.latent, device=device)
+            sample, _ = g_ema(
+                [sample_z], truncation=args.truncation, truncation_latent=mean_latent
+            )
+            for item in sample:
+                item = norm_ip(item, item.min(), item.max())
+                item = item.mul(255).add_(0.5).clamp_(0, 255).permute(
+                    1, 2, 0).to('cpu', torch.uint8).numpy()
+                print(np.min(item), np.max(item))
+                cv2.imwrite(f"{args.save_img_path}/{count:06d}.png",
+                            item[:, :, [2, 1, 0]])
+                count += 1
+
+
+def norm_ip(img, min, max):
+    img.clamp_(min=min, max=max)
+    img.add_(-min).div_(max - min + 1e-5)
+    return img
+
+
 if __name__ == "__main__":
     device = "cuda"
 
-    parser = argparse.ArgumentParser(description="Generate samples from the generator")
+    parser = argparse.ArgumentParser(
+        description="Generate samples from the generator")
 
     parser.add_argument(
         "--size", type=int, default=1024, help="output image size of the generator"
@@ -43,7 +76,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--pics", type=int, default=20, help="number of images to be generated"
     )
-    parser.add_argument("--truncation", type=float, default=1, help="truncation ratio")
+    parser.add_argument("--truncation", type=float,
+                        default=1, help="truncation ratio")
     parser.add_argument(
         "--truncation_mean",
         type=int,
@@ -61,6 +95,11 @@ if __name__ == "__main__":
         type=int,
         default=2,
         help="channel multiplier of the generator. config-f = 2, else = 1",
+    )
+    parser.add_argument(
+        "--save_img_path",
+        type=str,
+        help="save  generateimage dir",
     )
 
     args = parser.parse_args()
@@ -81,4 +120,4 @@ if __name__ == "__main__":
     else:
         mean_latent = None
 
-    generate(args, g_ema, device, mean_latent)
+    generate_img(args, g_ema, device, mean_latent)
