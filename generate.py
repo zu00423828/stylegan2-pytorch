@@ -6,7 +6,6 @@ from model import Generator
 from tqdm import tqdm
 import os
 import cv2
-from PIL import Image
 import numpy as np
 
 
@@ -48,7 +47,7 @@ def generate_img(args, g_ema, device, mean_latent):
                     1, 2, 0).to('cpu', torch.uint8).numpy()
                 print(np.min(item), np.max(item))
                 cv2.imwrite(f"{args.save_img_path}/{count:06d}.png",
-                            item[:, :, [2, 1, 0]])
+                            item[..., ::-1])
                 count += 1
 
 
