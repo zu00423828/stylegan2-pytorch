@@ -45,7 +45,6 @@ def generate_img(args, g_ema, device, mean_latent):
                 item = norm_ip(item, item.min(), item.max())
                 item = item.mul(255).add_(0.5).clamp_(0, 255).permute(
                     1, 2, 0).to('cpu', torch.uint8).numpy()
-                print(np.min(item), np.max(item))
                 cv2.imwrite(f"{args.save_img_path}/{count:06d}.png",
                             item[..., ::-1])
                 count += 1

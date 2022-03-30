@@ -22,7 +22,8 @@ def extract_feature_from_samples(
 
     for batch in tqdm(batch_sizes):
         latent = torch.randn(batch, 512, device=device)
-        img, _ = g([latent], truncation=truncation, truncation_latent=truncation_latent)
+        img, _ = g([latent], truncation=truncation,
+                   truncation_latent=truncation_latent)
         feat = inception(img)[0].view(img.shape[0], -1)
         features.append(feat.to("cpu"))
 
@@ -62,7 +63,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Calculate FID scores")
 
-    parser.add_argument("--truncation", type=float, default=1, help="truncation factor")
+    parser.add_argument("--truncation", type=float,
+                        default=1, help="truncation factor")
     parser.add_argument(
         "--truncation_mean",
         type=int,

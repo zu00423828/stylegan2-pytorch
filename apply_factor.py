@@ -9,7 +9,8 @@ from model import Generator
 if __name__ == "__main__":
     torch.set_grad_enabled(False)
 
-    parser = argparse.ArgumentParser(description="Apply closed form factorization")
+    parser = argparse.ArgumentParser(
+        description="Apply closed form factorization")
 
     parser.add_argument(
         "-i", "--index", type=int, default=0, help="index of eigenvector"
@@ -27,7 +28,8 @@ if __name__ == "__main__":
         default=2,
         help='channel multiplier factor. config-f = 2, else = 1',
     )
-    parser.add_argument("--ckpt", type=str, required=True, help="stylegan2 checkpoints")
+    parser.add_argument("--ckpt", type=str, required=True,
+                        help="stylegan2 checkpoints")
     parser.add_argument(
         "--size", type=int, default=256, help="output image size of the generator"
     )
@@ -55,8 +57,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     eigvec = torch.load(args.factor)["eigvec"].to(args.device)
-    ckpt = torch.load(args.ckpt)
-    g = Generator(args.size, 512, 8, channel_multiplier=args.channel_multiplier).to(args.device)
+    ckpt = torch.load(args.ckpt, map_location=torch.device(args.device))
+    g = Generator(args.size, 512, 8,
+                  channel_multiplier=args.channel_multiplier).to(args.device)
     g.load_state_dict(ckpt["g_ema"], strict=False)
 
     trunc = g.mean_latent(4096)
@@ -87,7 +90,7 @@ if __name__ == "__main__":
 
     grid = utils.save_image(
         torch.cat([img1, img, img2], 0),
-        f"{args.out_prefix}_index-{args.index}_degree-{args.degree}.png",
+        f"factor_out/{args.out_prefix}_index-{args.index}_degree-{args.degree}.png",
         normalize=True,
         range=(-1, 1),
         nrow=args.n_sample,
