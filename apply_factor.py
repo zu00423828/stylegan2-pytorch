@@ -4,6 +4,63 @@ import torch
 from torchvision import utils
 
 from model import Generator
+from tqdm import trange
+import cv2
+import os
+
+
+def random_style():
+    latent = torch.randn(args.n_sample, 512, device=args.device)
+    latent = g.get_latent(latent)
+    direction = args.degree * eigvec[:, args.index].unsqueeze(0)
+    img, _ = g(
+        [latent],
+        truncation=args.truncation,
+        truncation_latent=trunc,
+        input_is_latent=True,
+    )
+    img1, _ = g(
+        [latent + direction],
+        truncation=args.truncation,
+        truncation_latent=trunc,
+        input_is_latent=True,
+    )
+    img2, _ = g(
+        [latent - direction],
+        truncation=args.truncation,
+        truncation_latent=trunc,
+        input_is_latent=True,
+    )
+    grid = utils.save_image(
+        torch.cat([img1, img, img2], 0),
+        f"factor_out/{args.out_prefix}_index-{args.index}_degree-{args.degree}.png",
+        normalize=True,
+        range=(-1, 1),
+        nrow=args.n_sample,
+    )
+
+
+def modify_style():
+    for degree in trange(-int(args.degree), int(args.degree+1)):
+        direction = degree * eigvec[:, args.index].unsqueeze(0)
+        latent = torch.load(args.latent_file).unsqueeze(0)
+        latent = g.get_latent(latent)
+        item, _ = g(
+            [latent + direction], truncation=args.truncation,
+            truncation_latent=trunc, input_is_latent=True,
+        ).squeeze(0)
+        item = norm_ip(item, item.min(), item.max())
+        item = item.mul(255).add_(0.5).clamp_(0, 255).permute(
+            1, 2, 0).to('cpu', torch.uint8).numpy()
+        cv2.imwrite(f"{args.save_img_path}/{count:06d}.png",
+                    item[..., ::-1])
+        count += 1
+
+
+def norm_ip(img, min, max):
+    img.clamp_(min=min, max=max)
+    img.add_(-min).div_(max - min + 1e-5)
+    return img
 
 
 if __name__ == "__main__":
@@ -53,6 +110,14 @@ if __name__ == "__main__":
         type=str,
         help="name of the closed form factorization result factor file",
     )
+    parser.add_argument(
+        "--latent_file",
+        type=str,
+    )
+    parser.add_argument(
+        "--save_dir",
+        type=str,
+    )
 
     args = parser.parse_args()
 
@@ -63,35 +128,7 @@ if __name__ == "__main__":
     g.load_state_dict(ckpt["g_ema"], strict=False)
 
     trunc = g.mean_latent(4096)
-
-    latent = torch.randn(args.n_sample, 512, device=args.device)
-    latent = g.get_latent(latent)
-
-    direction = args.degree * eigvec[:, args.index].unsqueeze(0)
-
-    img, _ = g(
-        [latent],
-        truncation=args.truncation,
-        truncation_latent=trunc,
-        input_is_latent=True,
-    )
-    img1, _ = g(
-        [latent + direction],
-        truncation=args.truncation,
-        truncation_latent=trunc,
-        input_is_latent=True,
-    )
-    img2, _ = g(
-        [latent - direction],
-        truncation=args.truncation,
-        truncation_latent=trunc,
-        input_is_latent=True,
-    )
-
-    grid = utils.save_image(
-        torch.cat([img1, img, img2], 0),
-        f"factor_out/{args.out_prefix}_index-{args.index}_degree-{args.degree}.png",
-        normalize=True,
-        range=(-1, 1),
-        nrow=args.n_sample,
-    )
+    if args.latent_file is None:
+        random_style()
+    else:
+        modify_style()
