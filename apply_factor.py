@@ -33,7 +33,7 @@ def random_style():
     )
     grid = utils.save_image(
         torch.cat([img1, img, img2], 0),
-        f"factor_out/{args.out_prefix}_index-{args.index}_degree-{args.degree}.png",
+        f"{args.save_dir}/{args.out_prefix}_index-{args.index}_degree-{args.degree}.png",
         normalize=True,
         range=(-1, 1),
         nrow=args.n_sample,
@@ -52,7 +52,7 @@ def modify_style():
         item = norm_ip(item, item.min(), item.max())
         item = item.mul(255).add_(0.5).clamp_(0, 255).permute(
             1, 2, 0).to('cpu', torch.uint8).numpy()
-        cv2.imwrite(f"{args.save_img_path}/{count:06d}.png",
+        cv2.imwrite(f"{args.save_dir}/{count:06d}.png",
                     item[..., ::-1])
         count += 1
 
@@ -128,6 +128,7 @@ if __name__ == "__main__":
     g.load_state_dict(ckpt["g_ema"], strict=False)
 
     trunc = g.mean_latent(4096)
+    os.makedirs(args.save_dir, exist_ok=True)
     if args.latent_file is None:
         random_style()
     else:

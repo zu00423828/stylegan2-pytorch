@@ -53,10 +53,51 @@ def generate_img(args, g_ema, device, mean_latent):
                 count += 1
 
 
+def generate_img_noargs(g_ema, pics, save_img_path, device, mean_latent, latent=512, truncation=1):
+    os.makedirs(save_img_path, exist_ok=True)
+    os.makedirs(f'{save_img_path}/latent', exist_ok=True)
+    # output min max -1 ~ 1
+    g_ema.eval()
+    count = 1
+    with torch.no_grad():
+        for i in tqdm(range(pics)):
+            sample_z = torch.randn(1, latent, device=device)
+            sample, _ = g_ema(
+                [sample_z], truncation=truncation, truncation_latent=mean_latent
+            )
+            for i, item in enumerate(sample):
+                item = norm_ip(item, item.min(), item.max())
+                item = item.mul(255).add_(0.5).clamp_(0, 255).permute(
+                    1, 2, 0).to('cpu', torch.uint8).numpy()
+                torch.save(
+                    sample_z[i], f"{save_img_path}/latent/{count:06d}.pt")
+                cv2.imwrite(f"{save_img_path}/{count:06d}.png",
+                            item[..., ::-1])
+                count += 1
+
+
 def norm_ip(img, min, max):
     img.clamp_(min=min, max=max)
     img.add_(-min).div_(max - min + 1e-5)
     return img
+
+
+def main_flow(ckpt, pics, save_path):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    latent = 512
+    n_mlp = 8
+    g_ema = Generator(
+        256, latent, n_mlp, channel_multiplier=2
+    )
+    checkpoint = torch.load(ckpt, map_location='cpu')
+    g_ema.load_state_dict(checkpoint["g_ema"])
+    g_ema.to(device)
+    if 1 < 1:
+        with torch.no_grad():
+            mean_latent = g_ema.mean_latent(4096)
+    else:
+        mean_latent = None
+    generate_img_noargs(g_ema, pics, save_path, device, mean_latent)
 
 
 if __name__ == "__main__":
@@ -112,7 +153,6 @@ if __name__ == "__main__":
         args.size, args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
     ).to(device)
     checkpoint = torch.load(args.ckpt)
-
     g_ema.load_state_dict(checkpoint["g_ema"])
 
     if args.truncation < 1:

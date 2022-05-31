@@ -100,7 +100,7 @@ if __name__ == "__main__":
     print(f"Make dataset of image sizes:", ", ".join(str(s) for s in sizes))
 
     # imgset = datasets.ImageFolder(args.path)
-    imgset = glob(args.path+'/*')
+    imgset = glob(args.path+'/*/*g')
 
     with lmdb.open(args.out, map_size=1024 ** 4, readahead=False) as env:
         prepare(env, imgset, args.n_worker, sizes=sizes, resample=resample)
