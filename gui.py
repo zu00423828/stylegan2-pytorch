@@ -7,7 +7,8 @@ from PIL import ImageTk, Image
 from generate import main_flow
 from glob import glob
 
-model_list = ['yellow', 'western', 'western_old','western_new']
+# , 'western_old', 'western_new', 'yellow_new']
+model_list = ['yellow', 'western']
 
 
 class Application(tk.Frame):
@@ -22,11 +23,12 @@ class Application(tk.Frame):
         choselabel = tk.Label(self, text="選擇人種：", font=fontStyle)
         choselabel.grid(row=1, column=0, padx=10, pady=5, sticky=tk.N+tk.W)
         self.listbox = tk.Listbox(self, font=fontStyle)
-        self.listbox["height"] = 4
+        self.listbox["height"] = 5
         self.listbox.insert(1, "亞洲人")
         self.listbox.insert(2, "歐美人")
-        self.listbox.insert(3, "歐美人_舊")
-        self.listbox.insert(4,'歐美人_新')
+        # self.listbox.insert(3, "歐美人_舊")
+        # self.listbox.insert(4, '歐美人_新')
+        # self.listbox.insert(5, '亞洲人_新')
         self.listbox.select_set(0)
         self.listbox.grid(row=1, column=1, padx=10, pady=5, sticky=tk.N+tk.W)
         self.listbox.select_set(0)

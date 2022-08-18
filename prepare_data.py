@@ -2,12 +2,10 @@ import argparse
 from io import BytesIO
 import multiprocessing
 from functools import partial
-
 from PIL import Image
 import lmdb
 from glob import glob
 from tqdm import tqdm
-from torchvision import datasets
 from torchvision.transforms import functional as trans_fn
 
 

@@ -87,7 +87,7 @@ def main_flow(ckpt, pics, save_path):
     latent = 512
     n_mlp = 8
     g_ema = Generator(
-        256, latent, n_mlp, channel_multiplier=2
+        1024, latent, n_mlp, channel_multiplier=2
     )
     checkpoint = torch.load(ckpt, map_location='cpu')
     g_ema.load_state_dict(checkpoint["g_ema"])
